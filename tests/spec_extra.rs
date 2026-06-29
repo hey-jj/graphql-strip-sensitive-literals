@@ -12,9 +12,9 @@ fn default() -> StripOptions {
 }
 
 fn hide() -> StripOptions {
-    StripOptions {
-        hide_list_and_object_literals: true,
-    }
+    StripOptions::builder()
+        .hide_list_and_object_literals(true)
+        .build()
 }
 
 /// Redact `src` and return the reprinted document, collapsed to one line so a
@@ -86,6 +86,16 @@ fn block_string_to_empty() {
     let got = strip_inline(r#"{ f(s: """hi""") }"#, default());
     assert!(got.contains(r#"f(s: "")"#), "got `{got}`");
     assert!(!got.contains(r#"""""#), "got `{got}`");
+}
+
+#[test]
+fn unicode_and_escaped_string_to_empty() {
+    // Redaction replaces the whole value, so multibyte text and escape
+    // sequences must collapse to the empty string with nothing left behind.
+    let got = strip_inline(r#"{ f(s: "héllo \n 🎉") }"#, default());
+    assert!(got.contains(r#"f(s: "")"#), "got `{got}`");
+    assert!(!got.contains("héllo"), "got `{got}`");
+    assert!(!got.contains('🎉'), "got `{got}`");
 }
 
 #[test]

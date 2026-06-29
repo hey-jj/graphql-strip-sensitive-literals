@@ -38,48 +38,37 @@ struct Case {
     expected_fixture: &'static str,
 }
 
-// Cases 1 to 3 collapse to the same options value. In TypeScript they are three
-// distinct calls: no second argument, `{}`, and an explicit `false`. All three
-// disable list and object emptying and must produce the same output. The rows
-// stay separate to document that and to catch a regression if an "option
-// present" path ever diverges.
-const CASES: &[Case] = &[
-    Case {
-        name: "default configuration",
-        opts: StripOptions {
-            hide_list_and_object_literals: false,
-        },
-        expected_fixture: "default.expected.graphql",
-    },
-    Case {
-        name: "empty but defined configuration",
-        opts: StripOptions {
-            hide_list_and_object_literals: false,
-        },
-        expected_fixture: "default.expected.graphql",
-    },
-    Case {
-        name: "hide_list_and_object_literals false",
-        opts: StripOptions {
-            hide_list_and_object_literals: false,
-        },
-        expected_fixture: "default.expected.graphql",
-    },
-    Case {
-        name: "hide_list_and_object_literals true",
-        opts: StripOptions {
-            hide_list_and_object_literals: true,
-        },
-        expected_fixture: "hide_list_object.expected.graphql",
-    },
-];
-
 #[test]
 fn snapshot_cases() {
+    let cases = [
+        Case {
+            name: "default configuration",
+            opts: StripOptions::default(),
+            expected_fixture: "default.expected.graphql",
+        },
+        Case {
+            name: "hide_list_and_object_literals true",
+            opts: StripOptions::builder()
+                .hide_list_and_object_literals(true)
+                .build(),
+            expected_fixture: "hide_list_object.expected.graphql",
+        },
+    ];
+
     let input = load("input.graphql");
-    for case in CASES {
+    for case in &cases {
         let got = strip_and_print(&input, case.opts);
         let want = normalize(&load(case.expected_fixture));
         assert_eq!(got, want, "case `{}`", case.name);
     }
+}
+
+// The default and an explicit `false` are the same configuration. One snapshot
+// row covers the behavior. This pins the equality so the two cannot drift.
+#[test]
+fn default_equals_explicit_false() {
+    let explicit_false = StripOptions::builder()
+        .hide_list_and_object_literals(false)
+        .build();
+    assert_eq!(StripOptions::default(), explicit_false);
 }

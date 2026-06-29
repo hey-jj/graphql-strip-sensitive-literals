@@ -1,8 +1,11 @@
 //! The redaction walk over a GraphQL document AST.
 
 use apollo_compiler::ast::{
-    Argument, Definition, Directive, Document, Field, FragmentDefinition, InlineFragment, IntValue,
-    OperationDefinition, Selection, Value, VariableDefinition,
+    Argument, Definition, Directive, DirectiveDefinition, Document, EnumTypeDefinition,
+    EnumTypeExtension, EnumValueDefinition, Field, FieldDefinition, FragmentDefinition,
+    InlineFragment, InputObjectTypeDefinition, InputObjectTypeExtension, InputValueDefinition,
+    IntValue, InterfaceTypeDefinition, InterfaceTypeExtension, ObjectTypeDefinition,
+    ObjectTypeExtension, OperationDefinition, Selection, Value, VariableDefinition,
 };
 use apollo_compiler::Node;
 
@@ -24,9 +27,43 @@ fn strip_definition(def: &mut Definition, options: StripOptions) {
     match def {
         Definition::OperationDefinition(node) => strip_operation(node.make_mut(), options),
         Definition::FragmentDefinition(node) => strip_fragment(node.make_mut(), options),
-        // Type system definitions carry no executable literals this function
-        // scrubs. Leave them as they are.
-        _ => {}
+        Definition::DirectiveDefinition(node) => {
+            strip_directive_definition(node.make_mut(), options)
+        }
+        Definition::SchemaDefinition(node) => {
+            strip_directives(&mut node.make_mut().directives.0, options)
+        }
+        Definition::SchemaExtension(node) => {
+            strip_directives(&mut node.make_mut().directives.0, options)
+        }
+        Definition::ScalarTypeDefinition(node) => {
+            strip_directives(&mut node.make_mut().directives.0, options)
+        }
+        Definition::ScalarTypeExtension(node) => {
+            strip_directives(&mut node.make_mut().directives.0, options)
+        }
+        Definition::ObjectTypeDefinition(node) => strip_object_type(node.make_mut(), options),
+        Definition::ObjectTypeExtension(node) => {
+            strip_object_type_extension(node.make_mut(), options)
+        }
+        Definition::InterfaceTypeDefinition(node) => strip_interface_type(node.make_mut(), options),
+        Definition::InterfaceTypeExtension(node) => {
+            strip_interface_type_extension(node.make_mut(), options)
+        }
+        Definition::UnionTypeDefinition(node) => {
+            strip_directives(&mut node.make_mut().directives.0, options)
+        }
+        Definition::UnionTypeExtension(node) => {
+            strip_directives(&mut node.make_mut().directives.0, options)
+        }
+        Definition::EnumTypeDefinition(node) => strip_enum_type(node.make_mut(), options),
+        Definition::EnumTypeExtension(node) => strip_enum_type_extension(node.make_mut(), options),
+        Definition::InputObjectTypeDefinition(node) => {
+            strip_input_object_type(node.make_mut(), options)
+        }
+        Definition::InputObjectTypeExtension(node) => {
+            strip_input_object_type_extension(node.make_mut(), options)
+        }
     }
 }
 
@@ -41,6 +78,77 @@ fn strip_operation(op: &mut OperationDefinition, options: StripOptions) {
 fn strip_fragment(frag: &mut FragmentDefinition, options: StripOptions) {
     strip_directives(&mut frag.directives.0, options);
     strip_selection_set(&mut frag.selection_set, options);
+}
+
+fn strip_directive_definition(def: &mut DirectiveDefinition, options: StripOptions) {
+    strip_input_value_definitions(&mut def.arguments, options);
+}
+
+fn strip_object_type(def: &mut ObjectTypeDefinition, options: StripOptions) {
+    strip_directives(&mut def.directives.0, options);
+    strip_field_definitions(&mut def.fields, options);
+}
+
+fn strip_object_type_extension(def: &mut ObjectTypeExtension, options: StripOptions) {
+    strip_directives(&mut def.directives.0, options);
+    strip_field_definitions(&mut def.fields, options);
+}
+
+fn strip_interface_type(def: &mut InterfaceTypeDefinition, options: StripOptions) {
+    strip_directives(&mut def.directives.0, options);
+    strip_field_definitions(&mut def.fields, options);
+}
+
+fn strip_interface_type_extension(def: &mut InterfaceTypeExtension, options: StripOptions) {
+    strip_directives(&mut def.directives.0, options);
+    strip_field_definitions(&mut def.fields, options);
+}
+
+fn strip_enum_type(def: &mut EnumTypeDefinition, options: StripOptions) {
+    strip_directives(&mut def.directives.0, options);
+    strip_enum_values(&mut def.values, options);
+}
+
+fn strip_enum_type_extension(def: &mut EnumTypeExtension, options: StripOptions) {
+    strip_directives(&mut def.directives.0, options);
+    strip_enum_values(&mut def.values, options);
+}
+
+fn strip_input_object_type(def: &mut InputObjectTypeDefinition, options: StripOptions) {
+    strip_directives(&mut def.directives.0, options);
+    strip_input_value_definitions(&mut def.fields, options);
+}
+
+fn strip_input_object_type_extension(def: &mut InputObjectTypeExtension, options: StripOptions) {
+    strip_directives(&mut def.directives.0, options);
+    strip_input_value_definitions(&mut def.fields, options);
+}
+
+fn strip_field_definitions(fields: &mut [Node<FieldDefinition>], options: StripOptions) {
+    for field in fields {
+        let field = field.make_mut();
+        strip_input_value_definitions(&mut field.arguments, options);
+        strip_directives(&mut field.directives.0, options);
+    }
+}
+
+fn strip_input_value_definitions(values: &mut [Node<InputValueDefinition>], options: StripOptions) {
+    for value in values {
+        strip_input_value_definition(value.make_mut(), options);
+    }
+}
+
+fn strip_input_value_definition(value: &mut InputValueDefinition, options: StripOptions) {
+    if let Some(default) = &mut value.default_value {
+        strip_value(default.make_mut(), options);
+    }
+    strip_directives(&mut value.directives.0, options);
+}
+
+fn strip_enum_values(values: &mut [Node<EnumValueDefinition>], options: StripOptions) {
+    for value in values {
+        strip_directives(&mut value.make_mut().directives.0, options);
+    }
 }
 
 fn strip_variable_definition(var: &mut VariableDefinition, options: StripOptions) {

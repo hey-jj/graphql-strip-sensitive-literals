@@ -21,9 +21,27 @@
 //! variable values stay untouched. Booleans, nulls, and enums are not treated
 //! as sensitive.
 //!
+//! The walk covers the whole document. Operations and fragments are redacted.
+//! Type-system definitions are too, so literals in field-argument defaults,
+//! input-field defaults, and directive arguments collapse the same way.
+//!
 //! The best defense is to avoid inline literals. Pass user data through GraphQL
 //! variables so it never appears in the operation text. This crate is the
 //! backstop for operations that still inline data.
+//!
+//! # apollo-compiler in the public API
+//!
+//! The document type is [`apollo_compiler::ast::Document`], re-exported here as
+//! [`Document`]. It appears in the signature of [`strip_sensitive_literals`], so
+//! it is part of this crate's public API. A caller builds input with
+//! `Document::parse` from `apollo-compiler`, which means the caller depends on
+//! `apollo-compiler` directly. The re-export names the boundary type so call
+//! sites can reach it through one path.
+//!
+//! This couples the crate to the `apollo-compiler` major version. The dependency
+//! is pinned to `1.x`. A consumer that passes a `Document` across this boundary
+//! must resolve to the same `apollo-compiler` major. An `apollo-compiler` `2.0`
+//! would change this crate's public type and require a matching major bump here.
 //!
 //! # Example
 //!
@@ -51,7 +69,7 @@ mod options;
 mod strip;
 
 pub use apollo_compiler::ast::Document;
-pub use options::StripOptions;
+pub use options::{StripOptions, StripOptionsBuilder};
 
 /// Return a redacted copy of `ast`.
 ///
@@ -84,10 +102,10 @@ pub use options::StripOptions;
 /// assert!(kept.to_string().contains(r#"f(list: [0, 0], obj: {k: ""})"#));
 ///
 /// // Opt in: empty the list and the object.
-/// let hidden = strip_sensitive_literals(
-///     &doc,
-///     StripOptions { hide_list_and_object_literals: true },
-/// );
+/// let opts = StripOptions::builder()
+///     .hide_list_and_object_literals(true)
+///     .build();
+/// let hidden = strip_sensitive_literals(&doc, opts);
 /// assert!(hidden.to_string().contains("f(list: [], obj: {})"));
 /// ```
 pub fn strip_sensitive_literals(ast: &Document, options: StripOptions) -> Document {

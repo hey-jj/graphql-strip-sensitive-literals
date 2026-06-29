@@ -19,6 +19,10 @@ Everything else is preserved. Field names, aliases, variable names and types,
 fragment names, and directives stay as they are. Booleans, nulls, enums, and
 variable references are not treated as sensitive and are left untouched.
 
+The walk covers the whole document. Operations, fragments, and type-system
+definitions are all redacted, so literals in field-argument defaults,
+input-field defaults, and directive arguments collapse the same way.
+
 The input document is never modified. The result is a fresh owned tree. Running
 the function twice gives the same result as running it once.
 
@@ -46,16 +50,24 @@ let redacted = strip_sensitive_literals(&doc, StripOptions::default());
 // user(name: "", age: 0, tags: ["", ""]) { id }
 
 // Opt in to empty lists and objects too.
-let hidden = strip_sensitive_literals(
-    &doc,
-    StripOptions { hide_list_and_object_literals: true },
-);
+let opts = StripOptions::builder()
+    .hide_list_and_object_literals(true)
+    .build();
+let hidden = strip_sensitive_literals(&doc, opts);
 // user(name: "", age: 0, tags: []) { id }
 ```
 
 The strongest defense is to avoid inline literals. Pass user data through
 GraphQL variables so it never reaches the operation text. This crate is the
 backstop for operations that still inline data.
+
+## apollo-compiler version
+
+The `Document` type comes from `apollo-compiler` and appears in the public API.
+Build input with `Document::parse`, which means you depend on `apollo-compiler`
+directly. That ties this crate to the `apollo-compiler` major version. The
+dependency is pinned to `1.x`. Pass a `Document` across the boundary only when
+both crates resolve to the same `apollo-compiler` major.
 
 ## License
 

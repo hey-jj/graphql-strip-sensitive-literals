@@ -13,6 +13,13 @@
 /// An absent option and an explicit `false` behave the same. Only `true` turns
 /// list and object emptying on.
 ///
+/// # Construction
+///
+/// The struct is `#[non_exhaustive]`, so build it with [`StripOptions::default`]
+/// or [`StripOptions::builder`] rather than a struct literal. New options can
+/// then land in a minor release without breaking call sites. The fields stay
+/// public for reading.
+///
 /// # Examples
 ///
 /// ```
@@ -23,10 +30,13 @@
 /// assert!(!keep.hide_list_and_object_literals);
 ///
 /// // Opt in to empty lists and objects.
-/// let hide = StripOptions { hide_list_and_object_literals: true };
+/// let hide = StripOptions::builder()
+///     .hide_list_and_object_literals(true)
+///     .build();
 /// assert!(hide.hide_list_and_object_literals);
 /// ```
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
+#[non_exhaustive]
 pub struct StripOptions {
     /// Empty every list and object literal when `true`.
     ///
@@ -34,4 +44,46 @@ pub struct StripOptions {
     /// contents and does not recurse into them. Default is `false`, which keeps
     /// the structure and redacts the nested scalars instead.
     pub hide_list_and_object_literals: bool,
+}
+
+impl StripOptions {
+    /// Start building a [`StripOptions`] from the default configuration.
+    ///
+    /// ```
+    /// use graphql_strip_sensitive_literals::StripOptions;
+    ///
+    /// let opts = StripOptions::builder()
+    ///     .hide_list_and_object_literals(true)
+    ///     .build();
+    /// assert!(opts.hide_list_and_object_literals);
+    /// ```
+    pub fn builder() -> StripOptionsBuilder {
+        StripOptionsBuilder {
+            options: StripOptions::default(),
+        }
+    }
+}
+
+/// Builder for [`StripOptions`].
+///
+/// Created by [`StripOptions::builder`]. Each setter takes the builder by value
+/// and returns it, so calls chain. Finish with [`build`](Self::build).
+#[derive(Debug, Clone, Copy)]
+pub struct StripOptionsBuilder {
+    options: StripOptions,
+}
+
+impl StripOptionsBuilder {
+    /// Empty every list and object literal when `true`.
+    ///
+    /// See [`StripOptions::hide_list_and_object_literals`].
+    pub fn hide_list_and_object_literals(mut self, value: bool) -> Self {
+        self.options.hide_list_and_object_literals = value;
+        self
+    }
+
+    /// Return the configured [`StripOptions`].
+    pub fn build(self) -> StripOptions {
+        self.options
+    }
 }

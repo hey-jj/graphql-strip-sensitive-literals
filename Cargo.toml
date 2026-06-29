@@ -12,4 +12,7 @@ categories = ["parser-implementations", "web-programming"]
 [dependencies]
 # Provides the GraphQL AST, parser, and a printer that matches graphql-js
 # formatting. Used for the document type, parsing, and serialization.
-apollo-compiler = "1"
+# `Document` from this crate is part of our public API, so the major version is
+# a compatibility boundary. Pinned to the current minor so a consumer lockfile
+# cannot pick an older 1.x that predates the AST shape this crate relies on.
+apollo-compiler = "1.32"

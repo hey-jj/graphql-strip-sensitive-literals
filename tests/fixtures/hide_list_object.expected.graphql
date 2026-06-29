@@ -1,0 +1,21 @@
+query Foo($b: Int, $a: Boolean) {
+  user(name: "", age: 0, pct: 0, lst: [], obj: {}) {
+    ...Bar
+    ... on User {
+      hello
+      bee
+    }
+    tz
+    aliased: name
+    withInputs(str: "", int: 0, flt: 0, lst: [], obj: {})
+  }
+}
+
+fragment Bar on User {
+  age @skip(if: $a)
+  ...Nested
+}
+
+fragment Nested on User {
+  blah
+}

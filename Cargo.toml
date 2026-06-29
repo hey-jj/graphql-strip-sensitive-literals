@@ -1,0 +1,10 @@
+[package]
+name = "graphql-strip-sensitive-literals"
+version = "0.1.0"
+edition = "2021"
+description = "redact PII literals from a GraphQL query AST before logging/usage reporting"
+license = "MIT"
+repository = "https://github.com/hey-jj/graphql-strip-sensitive-literals"
+readme = "README.md"
+
+[dependencies]

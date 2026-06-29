@@ -6,5 +6,10 @@ description = "redact PII literals from a GraphQL query AST before logging/usage
 license = "MIT"
 repository = "https://github.com/hey-jj/graphql-strip-sensitive-literals"
 readme = "README.md"
+keywords = ["graphql", "redaction", "pii", "privacy", "ast"]
+categories = ["parser-implementations", "web-programming"]
 
 [dependencies]
+# Provides the GraphQL AST, parser, and a printer that matches graphql-js
+# formatting. Used for the document type, parsing, and serialization.
+apollo-compiler = "1"

@@ -7,7 +7,7 @@ license = "MIT"
 repository = "https://github.com/hey-jj/graphql-strip-sensitive-literals"
 readme = "README.md"
 keywords = ["graphql", "redaction", "pii", "privacy", "ast"]
-categories = ["parser-implementations", "web-programming"]
+categories = ["text-processing", "web-programming"]
 
 [dependencies]
 # Provides the GraphQL AST, parser, and a printer that matches graphql-js

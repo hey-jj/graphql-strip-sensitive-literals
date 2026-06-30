@@ -108,6 +108,7 @@ pub use options::{StripOptions, StripOptionsBuilder};
 /// let hidden = strip_sensitive_literals(&doc, opts);
 /// assert!(hidden.to_string().contains("f(list: [], obj: {})"));
 /// ```
+#[must_use = "redaction returns a new document and does not modify `ast` in place"]
 pub fn strip_sensitive_literals(ast: &Document, options: StripOptions) -> Document {
     strip::strip(ast, options)
 }
